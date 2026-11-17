@@ -80,19 +80,13 @@
   </div>
 
   <div class="card">
-    <h2>2. Endereço do site</h2>
-    <label for="fUrl">Link onde esta página está publicada (os links do WhatsApp apontam pra ele)</label>
-    <input id="fUrl" type="url" placeholder="https://meu-amigo-secreto.netlify.app">
-  </div>
-
-  <div class="card">
-    <h2>3. Sortear</h2>
+    <h2>2. Sortear</h2>
     <button id="btnDraw" class="big">🎲 Sortear amigo secreto</button>
     <div id="drawMsg"></div>
   </div>
 
   <div id="sendCard" class="card hide">
-    <h2>4. Enviar no WhatsApp</h2>
+    <h2>3. Enviar no WhatsApp</h2>
     <p class="meta" style="margin-top:0">Cada botão abre o WhatsApp com uma mensagem que só tem um link. Você não vê o resultado de ninguém.</p>
     <ul id="sendList"></ul>
   </div>
@@ -169,7 +163,6 @@ function render(){
     x.onclick = () => { state.people.splice(i,1); state.draw=null; state.sent={}; save(); render(); renderSend(); };
     li.appendChild(left); li.appendChild(x); ul.appendChild(li);
   });
-  $("fUrl").value = state.url || "";
 }
 
 $("btnAdd").onclick = () => {
@@ -190,8 +183,6 @@ $("btnAdd").onclick = () => {
   $("fNome").focus();
 };
 ["fNome","fTel","fGrupo"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") $("btnAdd").click(); }));
-
-$("fUrl").addEventListener("input", e => { state.url = e.target.value.trim(); save(); renderSend(); });
 
 /* ---------- sorteio ---------- */
 function tryDraw(people){
@@ -224,9 +215,7 @@ $("btnDraw").onclick = () => {
 
 /* ---------- envio ---------- */
 function baseUrl(){
-  let u = (state.url || "").trim();
-  if(!u && /^https?:/.test(location.href)) u = location.href;
-  return u.split("#")[0];
+  return /^https?:/.test(location.href) ? location.href.split("#")[0] : "";
 }
 function renderSend(){
   const card = $("sendCard"), ul = $("sendList");
@@ -255,7 +244,7 @@ function renderSend(){
       const texto = "Oi, " + p.nome + "! 🎁 Chegou a hora do nosso Amigo Secreto da família. Toque no link pra descobrir quem você tirou (e não conta pra ninguém!):\n\n" + link;
       a.href = "https://wa.me/" + p.tel + "?text=" + encodeURIComponent(texto);
       a.onclick = () => { state.sent[p.nome]=true; save(); setTimeout(renderSend,300); };
-      if(!base){ a.removeAttribute("href"); a.onclick = e => { e.preventDefault(); msg($("drawMsg"),"Preencha o endereço do site no passo 2 primeiro.","err"); }; }
+      if(!base){ a.removeAttribute("href"); a.onclick = e => { e.preventDefault(); msg($("drawMsg"),"Abra o site pelo endereço do GitHub Pages (não pelo arquivo no computador) para gerar os links.","err"); }; }
       right.appendChild(a);
     }
     li.appendChild(left); li.appendChild(right); ul.appendChild(li);
