@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amigo Secreto da Família</title>
+<style>
+  :root{--bg:#fdf6f0;--card:#fff;--ink:#2b2320;--mut:#7a6b63;--red:#c8372d;--green:#2f7d4f;--line:#eadfd7}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+  .wrap{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:26px;margin:8px 0 2px}
+  h2{font-size:17px;margin:0 0 12px}
+  p.sub{color:var(--mut);margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+  label{display:block;font-size:13px;color:var(--mut);margin:0 0 4px}
+  input[type=text],input[type=tel],input[type=url]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:#fff}
+  .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  @media(max-width:560px){.row{grid-template-columns:1fr}}
+  .chk{display:flex;align-items:center;gap:8px;margin:12px 0 0;font-size:14px}
+  button,.btn{display:inline-block;border:0;border-radius:10px;padding:10px 16px;font-size:15px;cursor:pointer;background:var(--red);color:#fff;text-decoration:none;font-weight:600}
+  button.sec,.btn.sec{background:#f1e8e1;color:var(--ink)}
+  button.wa,.btn.wa{background:#25a244}
+  button.big{width:100%;padding:14px;font-size:17px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  ul{list-style:none;margin:0;padding:0}
+  li.p{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  li.p:first-child{border-top:0}
+  .nm{font-weight:600}
+  .meta{font-size:13px;color:var(--mut)}
+  .tag{font-size:11px;background:#e6f2ea;color:var(--green);padding:2px 8px;border-radius:99px;margin-left:6px}
+  .x{background:none;color:var(--mut);padding:4px 8px;font-size:18px}
+  .msg{padding:10px 12px;border-radius:10px;margin-top:12px;font-size:14px}
+  .err{background:#fde8e6;color:#8f2119}
+  .ok{background:#e6f2ea;color:#1f5a38}
+  .hide{display:none!important}
+  /* revelação */
+  .reveal{text-align:center;padding:40px 10px}
+  .gift{font-size:70px}
+  .who{font-size:34px;font-weight:800;color:var(--red);margin:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- TELA DE REVELAÇÃO (quando abre pelo link do WhatsApp) -->
+<div id="revealView" class="hide">
+  <div class="card reveal">
+    <div class="gift">🎁</div>
+    <h1 id="rvHello"></h1>
+    <p class="sub">Seu amigo secreto está escondido aqui. Não conta pra ninguém!</p>
+    <button id="rvBtn" class="big">Toque para revelar</button>
+    <div id="rvWho" class="who hide"></div>
+    <p id="rvNote" class="sub hide">Guarde esse nome em segredo 🤫</p>
+  </div>
+</div>
+
+<!-- TELA DO ORGANIZADOR -->
+<div id="adminView">
+  <h1>🎅 Amigo Secreto da Família</h1>
+  <p class="sub">Cadastre todo mundo, sorteie e envie o resultado no WhatsApp de cada um. O sorteio nunca aparece na tela.</p>
+
+  <div class="card">
+    <h2>1. Adicionar participante</h2>
+    <div class="row">
+      <div><label for="fNome">Nome</label><input id="fNome" type="text" placeholder="Ex: Maria"></div>
+      <div><label for="fTel">WhatsApp (com DDD)</label><input id="fTel" type="tel" placeholder="11 91234-5678"></div>
+      <div><label for="fGrupo">Casal/grupo (opcional)</label><input id="fGrupo" type="text" placeholder="Ex: Maria e João"></div>
+    </div>
+    <label class="chk"><input id="fEu" type="checkbox"> Este sou eu (eu também participo)</label>
+    <div style="margin-top:12px"><button id="btnAdd">Adicionar</button></div>
+    <div id="addMsg"></div>
+    <p class="meta" style="margin:12px 0 0">Quem tem o mesmo "casal/grupo" não tira um ao outro.</p>
+  </div>
+
+  <div class="card">
+    <h2>Participantes (<span id="count">0</span>)</h2>
+    <ul id="list"></ul>
+    <p id="empty" class="meta">Ninguém ainda.</p>
+  </div>
+
+  <div class="card">
+    <h2>2. Endereço do site</h2>
+    <label for="fUrl">Link onde esta página está publicada (os links do WhatsApp apontam pra ele)</label>
+    <input id="fUrl" type="url" placeholder="https://meu-amigo-secreto.netlify.app">
+  </div>
+
+  <div class="card">
+    <h2>3. Sortear</h2>
+    <button id="btnDraw" class="big">🎲 Sortear amigo secreto</button>
+    <div id="drawMsg"></div>
+  </div>
+
+  <div id="sendCard" class="card hide">
+    <h2>4. Enviar no WhatsApp</h2>
+    <p class="meta" style="margin-top:0">Cada botão abre o WhatsApp com uma mensagem que só tem um link. Você não vê o resultado de ninguém.</p>
+    <ul id="sendList"></ul>
+  </div>
+</div>
+
+</div>
+
+<script>
+const KEY = "amigo-secreto-v1";
+const XOR = "familia-segredo-2026";
+const $ = id => document.getElementById(id);
+let state = { people: [], draw: null, sent: {}, url: "" };
+
+/* ---------- storage ---------- */
+function load(){ try{ const s = localStorage.getItem(KEY); if(s) state = Object.assign(state, JSON.parse(s)); }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+/* ---------- codificação do link ---------- */
+function enc(obj){
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  const out = bytes.map((b,i)=>b ^ XOR.charCodeAt(i % XOR.length));
+  let bin = ""; out.forEach(b=>bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function dec(s){
+  s = s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="=";
+  const bin = atob(s);
+  const bytes = Uint8Array.from(bin, (c,i)=>c.charCodeAt(0) ^ XOR.charCodeAt(i % XOR.length));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* ---------- revelação ---------- */
+function showReveal(payload){
+  $("adminView").classList.add("hide");
+  $("revealView").classList.remove("hide");
+  try{
+    const d = dec(payload);
+    $("rvHello").textContent = "Oi, " + d.a + "!";
+    $("rvBtn").onclick = () => {
+      $("rvBtn").classList.add("hide");
+      $("rvWho").textContent = d.b;
+      $("rvWho").classList.remove("hide");
+      $("rvNote").classList.remove("hide");
+    };
+  }catch(e){
+    $("rvHello").textContent = "Link inválido";
+    $("rvBtn").classList.add("hide");
+  }
+}
+
+/* ---------- participantes ---------- */
+function normPhone(v){
+  let d = v.replace(/\D/g,"");
+  if(d.startsWith("0")) d = d.replace(/^0+/,"");
+  if(d.length === 10 || d.length === 11) d = "55" + d;
+  return d;
+}
+function msg(el, text, cls){ el.innerHTML = text ? '<div class="msg '+cls+'"></div>' : ""; if(text) el.firstChild.textContent = text; }
+
+function render(){
+  $("count").textContent = state.people.length;
+  $("empty").classList.toggle("hide", state.people.length>0);
+  const ul = $("list"); ul.innerHTML = "";
+  state.people.forEach((p,i)=>{
+    const li = document.createElement("li"); li.className = "p";
+    const left = document.createElement("div");
+    const nm = document.createElement("span"); nm.className="nm"; nm.textContent = p.nome;
+    left.appendChild(nm);
+    if(p.eu){ const t=document.createElement("span"); t.className="tag"; t.textContent="eu"; left.appendChild(t); }
+    const meta = document.createElement("div"); meta.className="meta";
+    meta.textContent = "+" + p.tel + (p.grupo ? " · " + p.grupo : "");
+    left.appendChild(meta);
+    const x = document.createElement("button"); x.className="x"; x.textContent="✕"; x.title="Remover";
+    x.onclick = () => { state.people.splice(i,1); state.draw=null; state.sent={}; save(); render(); renderSend(); };
+    li.appendChild(left); li.appendChild(x); ul.appendChild(li);
+  });
+  $("fUrl").value = state.url || "";
+}
+
+$("btnAdd").onclick = () => {
+  const nome = $("fNome").value.trim();
+  const tel = normPhone($("fTel").value);
+  const grupo = $("fGrupo").value.trim();
+  const eu = $("fEu").checked;
+  const m = $("addMsg");
+  if(!nome) return msg(m,"Coloque o nome.","err");
+  if(tel.length < 12) return msg(m,"WhatsApp inválido. Use DDD + número.","err");
+  if(state.people.some(p=>p.nome.toLowerCase()===nome.toLowerCase())) return msg(m,"Já existe alguém com esse nome. Diferencie (ex: Ana S.).","err");
+  if(eu && state.people.some(p=>p.eu)) return msg(m,"Você já foi marcado como participante.","err");
+  state.people.push({nome, tel, grupo, eu});
+  state.draw = null; state.sent = {};
+  save(); render(); renderSend();
+  $("fNome").value=""; $("fTel").value=""; $("fGrupo").value=""; $("fEu").checked=false;
+  msg(m,"","");
+  $("fNome").focus();
+};
+["fNome","fTel","fGrupo"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") $("btnAdd").click(); }));
+
+$("fUrl").addEventListener("input", e => { state.url = e.target.value.trim(); save(); renderSend(); });
+
+/* ---------- sorteio ---------- */
+function tryDraw(people){
+  const n = people.length;
+  for(let t=0; t<5000; t++){
+    const idx = [...Array(n).keys()];
+    for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+    let ok = true;
+    for(let i=0;i<n;i++){
+      const a = people[i], b = people[idx[i]];
+      if(i===idx[i] || (a.grupo && a.grupo.toLowerCase()===b.grupo.toLowerCase())){ ok=false; break; }
+    }
+    if(ok) return idx;
+  }
+  return null;
+}
+
+$("btnDraw").onclick = () => {
+  const m = $("drawMsg");
+  if(state.people.length < 3) return msg(m,"Precisa de pelo menos 3 participantes.","err");
+  if(state.draw && !confirm("Já existe um sorteio. Sortear de novo invalida os links que você já enviou. Continuar?")) return;
+  const idx = tryDraw(state.people);
+  if(!idx) return msg(m,"Não deu pra sortear com essas restrições de casal/grupo. Afrouxe alguma.","err");
+  // guarda só o resultado codificado (não aparece na tela)
+  state.draw = state.people.map((p,i)=>enc({a:p.nome, b:state.people[idx[i]].nome}));
+  state.sent = {};
+  save(); renderSend();
+  msg(m,"Sorteio feito! Agora é só enviar os links abaixo. Ninguém (nem você) viu o resultado.","ok");
+};
+
+/* ---------- envio ---------- */
+function baseUrl(){
+  let u = (state.url || "").trim();
+  if(!u && /^https?:/.test(location.href)) u = location.href;
+  return u.split("#")[0];
+}
+function renderSend(){
+  const card = $("sendCard"), ul = $("sendList");
+  if(!state.draw || state.draw.length !== state.people.length){ card.classList.add("hide"); return; }
+  card.classList.remove("hide"); ul.innerHTML = "";
+  const base = baseUrl();
+  state.people.forEach((p,i)=>{
+    const link = base + "#r=" + state.draw[i];
+    const li = document.createElement("li"); li.className="p";
+    const left = document.createElement("div");
+    const nm = document.createElement("span"); nm.className="nm"; nm.textContent=p.nome; left.appendChild(nm);
+    if(state.sent[p.nome]){ const t=document.createElement("span"); t.className="tag"; t.textContent="enviado ✓"; left.appendChild(t); }
+    const right = document.createElement("div");
+    if(p.eu){
+      const b = document.createElement("button"); b.textContent="👀 Ver o meu";
+      b.onclick = () => {
+        $("adminView").classList.add("hide"); showReveal(state.draw[i]);
+        $("rvBtn").insertAdjacentHTML("afterend","");
+        const back = document.createElement("button"); back.className="sec"; back.style.marginTop="16px"; back.textContent="← Voltar";
+        back.onclick = () => location.reload(); $("rvNote").after(back);
+      };
+      right.appendChild(b);
+    } else {
+      const a = document.createElement("a"); a.className="btn wa"; a.textContent="Enviar no WhatsApp";
+      a.target="_blank"; a.rel="noopener";
+      const texto = "Oi, " + p.nome + "! 🎁 Chegou a hora do nosso Amigo Secreto da família. Toque no link pra descobrir quem você tirou (e não conta pra ninguém!):\n\n" + link;
+      a.href = "https://wa.me/" + p.tel + "?text=" + encodeURIComponent(texto);
+      a.onclick = () => { state.sent[p.nome]=true; save(); setTimeout(renderSend,300); };
+      if(!base){ a.removeAttribute("href"); a.onclick = e => { e.preventDefault(); msg($("drawMsg"),"Preencha o endereço do site no passo 2 primeiro.","err"); }; }
+      right.appendChild(a);
+    }
+    li.appendChild(left); li.appendChild(right); ul.appendChild(li);
+  });
+}
+
+/* ---------- início ---------- */
+load();
+const h = location.hash;
+if(h.startsWith("#r=")){ showReveal(h.slice(3)); }
+else { render(); renderSend(); }
+</script>
+</body>
+</html>
